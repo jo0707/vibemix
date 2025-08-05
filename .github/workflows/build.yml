@@ -30,6 +30,6 @@ jobs:
                   # release the app after building
                   release: ${{ true }}
 
-                  build_script_name: "build:electron"
+                  build_script_name: "build:next-electron"
 
                   publish: "always"
