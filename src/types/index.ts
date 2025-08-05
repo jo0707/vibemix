@@ -7,7 +7,7 @@ export interface VideoConfig {
     title: string
     loopCount: number
     imageDuration: number
-    processingDevice: "cpu" | "gpu"
+    processingDevice: "cpu" | "gpu" | "amd-gpu"
 }
 export interface ProcessingStatus {
     stage: "idle" | "preparing" | "processing-video" | "processing-audio" | "finalizing" | "complete" | "error"

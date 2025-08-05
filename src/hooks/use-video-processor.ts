@@ -81,7 +81,42 @@ export const useVideoProcessor = () => {
                     message: "Files prepared, starting video processing...",
                 })
                 const outputVideoPath = `${finalOutputDir}\\${projectName}.mp4`
-                if (config.processingDevice === "gpu") {
+                if (config.processingDevice === "amd-gpu") {
+                    setProgress({
+                        stage: "processing-video",
+                        progress: 25,
+                        message: "Creating video segment with AMD GPU acceleration...",
+                    })
+                    const imageInputs = images
+                        .map((_, i) => `-loop 1 -t ${config.imageDuration} -i "${tempDir}\\${i}.png"`)
+                        .join(" ")
+                    const videoFilter = images
+                        .map(
+                            (_, i) =>
+                                `[${i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p[v${i}]`
+                        )
+                        .join("; ")
+                    const concatFilter = `[${images.map((_, i) => `v${i}`).join("][")}]concat=n=${
+                        images.length
+                    }:v=1:a=0,fps=25[v]`
+                    const segmentPath = `${tempDir}\\slideshow_segment.mp4`
+                    const amdCommand1 = `ffmpeg -y ${imageInputs} -filter_complex "${videoFilter}; ${concatFilter}" -map "[v]" -c:v h264_amf -quality quality -rc cqp -qp_i 18 -qp_p 18 -an "${segmentPath}"`
+                    const terminalCommand1 = `start "VibeMix AMD GPU Processing - Step 1" cmd /c "echo Starting AMD GPU video processing... && cd /d "${tempDir}" && ${amdCommand1} && echo. && echo Video segment created successfully! && timeout /t 3 /nobreak >nul"`
+                    const result1 = await executeCommand(terminalCommand1, tempDir)
+                    await new Promise((resolve) => setTimeout(resolve, 2000))
+                    setProgress({
+                        stage: "processing-audio",
+                        progress: 60,
+                        message: "Adding audio track... (check terminal window)",
+                    })
+                    const audioInputs = audio.map((_, i) => `-i "${tempDir}\\${i}.wav"`).join(" ")
+                    const audioConcat = `[${audio.map((_, i) => `${i + 1}:a`).join("][")}]concat=n=${
+                        audio.length
+                    }:v=0:a=1[a]`
+                    const amdCommand2 = `ffmpeg -y -stream_loop -1 -i "${segmentPath}" ${audioInputs} -filter_complex "${audioConcat}" -map 0:v -map "[a]" -c:v copy -c:a aac -shortest "${outputVideoPath}"`
+                    const terminalCommand2 = `start "VibeMix AMD GPU Processing - Step 2" cmd /c "echo Adding audio to video... && cd /d "${tempDir}" && ${amdCommand2} && echo. && echo Final video created successfully at: ${outputVideoPath} && echo. && echo Terminal will close in 5 seconds... && timeout /t 5 /nobreak >nul"`
+                    const result2 = await executeCommand(terminalCommand2, tempDir)
+                } else if (config.processingDevice === "gpu") {
                     setProgress({
                         stage: "processing-video",
                         progress: 25,

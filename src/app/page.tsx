@@ -4,6 +4,7 @@ import { FileUploadComponent } from "@/components/file-upload"
 import { ProjectConfigComponent } from "@/components/project-config"
 import { StatusResultComponent } from "@/components/status-result"
 import { DesktopCapabilities } from "@/components/desktop-capabilities"
+import { SongsList } from "@/components/songs-list"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useElectron } from "@/hooks/use-electron"
 import { useFFmpegStatus } from "@/hooks/use-ffmpeg-status"
@@ -14,7 +15,6 @@ export default function Home() {
     const [audio, setAudio] = useState<FileItem[]>([])
     const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null)
     const { isElectron } = useElectron()
-    const { status: ffmpegStatus } = useFFmpegStatus()
     const handleFileChange = (newImages: FileItem[], newAudio: FileItem[]) => {
         setImages(newImages)
         setAudio(newAudio)
@@ -61,6 +61,7 @@ export default function Home() {
                                         images={images}
                                         onProcessingUpdate={handleProcessingUpdate}
                                     />
+                                    <SongsList audioFiles={audio} />
                                     <StatusResultComponent
                                         status={getStatus()}
                                         progress={processingStatus?.progress || 0}
@@ -85,6 +86,7 @@ export default function Home() {
                                 images={images}
                                 onProcessingUpdate={handleProcessingUpdate}
                             />
+                            <SongsList audioFiles={audio} />
                             <StatusResultComponent
                                 status={getStatus()}
                                 progress={processingStatus?.progress || 0}

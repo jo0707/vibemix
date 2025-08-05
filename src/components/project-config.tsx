@@ -204,7 +204,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                                     <RadioGroup
                                         value={field.value}
                                         onValueChange={field.onChange}
-                                        className="flex gap-4"
+                                        className="flex flex-col gap-3"
                                     >
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="cpu" id="cpu" />
@@ -213,6 +213,10 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="gpu" id="gpu" />
                                             <Label htmlFor="gpu">GPU (NVIDIA NVENC)</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="amd-gpu" id="amd-gpu" />
+                                            <Label htmlFor="amd-gpu">AMD GPU (AMF)</Label>
                                         </div>
                                     </RadioGroup>
                                 )}
