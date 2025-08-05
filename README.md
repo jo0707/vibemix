@@ -1,10 +1,10 @@
 # VibeMix
 
-A desktop application for creating video slideshows from images with synchronized audio tracks.
+A desktop application for creating video slideshows from images with merged audio tracks
 
 ## Overview
 
-VibeMix is a Next.js-based desktop application built with Electron that converts your images and audio files into professional video slideshows. The app uses FFmpeg for video processing and provides both CPU and GPU acceleration options.
+VibeMix is a Next.js-based desktop application built with Electron that converts your images and audio files into professional video slideshows. This will result music compilation video with images slideshow. The app uses FFmpeg for video processing and provides both CPU and GPU acceleration options.
 
 ## Key Features
 
@@ -57,8 +57,8 @@ VibeMix is a Next.js-based desktop application built with Electron that converts
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd vidyslides
+git clone https://github.com/jo0707/vibemix.git
+cd vibemix
 
 # Install dependencies
 bun install
@@ -154,3 +154,7 @@ The application implements Electron security best practices:
 -   Node integration disabled in renderer
 -   Secure preload scripts for IPC communication
 -   Restricted access to system APIs through controlled interfaces
+
+## Contributing
+
+Feel free to contribute by submitting issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
