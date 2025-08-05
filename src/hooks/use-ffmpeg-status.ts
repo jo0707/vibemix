@@ -1,30 +1,18 @@
 import { useState, useEffect, useCallback } from "react"
 import { useElectron } from "./use-electron"
 import { useToast } from "./use-toast"
-
-export interface FFmpegStatus {
-    isChecking: boolean
-    isInstalled: boolean
-    version?: string
-    error?: string
-    hasChecked: boolean
-}
-
+import type { FFmpegStatus } from "@/types"
 export const useFFmpegStatus = () => {
     const [status, setStatus] = useState<FFmpegStatus>({
         isChecking: false,
         isInstalled: false,
         hasChecked: false,
     })
-
     const { isElectron, checkFFmpeg } = useElectron()
     const { toast } = useToast()
-
     const checkStatus = useCallback(async () => {
         if (!isElectron) return
-
         setStatus((prev) => ({ ...prev, isChecking: true }))
-
         try {
             const result = await checkFFmpeg()
             setStatus({
@@ -34,8 +22,6 @@ export const useFFmpegStatus = () => {
                 error: result.error,
                 hasChecked: true,
             })
-
-            // Show notification if FFmpeg is not installed
             if (!result.installed) {
                 toast({
                     variant: "destructive",
@@ -45,7 +31,6 @@ export const useFFmpegStatus = () => {
                     duration: 8000,
                 })
             }
-
             return result
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -55,22 +40,13 @@ export const useFFmpegStatus = () => {
                 error: errorMessage,
                 hasChecked: true,
             })
-
-            console.error("Error checking FFmpeg:", error)
             return { success: false, installed: false, error: errorMessage }
         }
     }, [isElectron, checkFFmpeg, toast])
-
-    // Auto-check on mount
     useEffect(() => {
         if (isElectron && !status.hasChecked) {
             checkStatus()
         }
     }, [isElectron, status.hasChecked, checkStatus])
-
-    return {
-        status,
-        checkStatus,
-        refresh: checkStatus,
-    }
+    return { status, checkStatus, refresh: checkStatus }
 }

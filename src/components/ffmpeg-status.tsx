@@ -1,5 +1,4 @@
 "use client"
-
 import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,51 +7,36 @@ import { CheckCircle, XCircle, Download, Terminal, AlertTriangle, Loader2 } from
 import { useElectron } from "@/hooks/use-electron"
 import { useFFmpegStatus } from "@/hooks/use-ffmpeg-status"
 import { useToast } from "@/hooks/use-toast"
-
 interface FFmpegStatusProps {
     onStatusChange?: (isInstalled: boolean) => void
 }
-
 export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
     const [isInstalling, setIsInstalling] = useState(false)
     const [installationOutput, setInstallationOutput] = useState<string>("")
     const [showInstallOutput, setShowInstallOutput] = useState(false)
-
     const { isElectron, executeCommand } = useElectron()
     const { status: ffmpegStatus, refresh: checkFfmpegStatus } = useFFmpegStatus()
     const { toast } = useToast()
-
-    // Notify parent of status changes
     useEffect(() => {
         if (ffmpegStatus.hasChecked) {
             onStatusChange?.(ffmpegStatus.isInstalled)
         }
     }, [ffmpegStatus.hasChecked, ffmpegStatus.isInstalled, onStatusChange])
-
     const handleInstallFFmpeg = async () => {
         setIsInstalling(true)
         setShowInstallOutput(true)
         setInstallationOutput("Starting FFmpeg installation...\n")
-
         try {
-            // Open a terminal window to show the installation process
             const terminalCommand = `start "FFmpeg Installation" cmd /k "echo Installing FFmpeg via winget... && echo This may take a few minutes && echo. && winget install -e --id Gyan.FFmpeg && echo. && echo Installation complete! You may need to restart VibeMix. && echo Press any key to close this window... && pause >nul"`
-
             await executeCommand(terminalCommand)
-
-            // Wait a bit for the process to start
             await new Promise((resolve) => setTimeout(resolve, 2000))
-
             setInstallationOutput((prev) => prev + "Installation started in terminal window...\n")
             setInstallationOutput((prev) => prev + "Please wait for the installation to complete.\n")
             setInstallationOutput((prev) => prev + "You may need to restart VibeMix after installation.\n")
-
             toast({
                 title: "Installation Started",
                 description: "FFmpeg installation is running in a terminal window. Please wait for it to complete.",
             })
-
-            // Check status again after a delay (user will need to manually refresh)
             setTimeout(() => {
                 setIsInstalling(false)
                 toast({
@@ -71,11 +55,9 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
             setIsInstalling(false)
         }
     }
-
     if (!isElectron) {
         return null // Only show in Electron app
     }
-
     return (
         <Card className="shadow-md border-gray-200">
             <CardHeader>
@@ -115,7 +97,6 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
                                 </AlertDescription>
                             </Alert>
                         )}
-
                         {!ffmpegStatus.isInstalled && (
                             <div className="space-y-3">
                                 <Alert className="border-yellow-200 bg-yellow-50">
@@ -129,7 +110,6 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
                                         </div>
                                     </AlertDescription>
                                 </Alert>
-
                                 <div className="flex gap-3">
                                     <Button onClick={handleInstallFFmpeg} disabled={isInstalling} className="flex-1">
                                         {isInstalling ? (
@@ -140,7 +120,6 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
                                         {isInstalling ? "Installing..." : "Install FFmpeg"}
                                     </Button>
                                 </div>
-
                                 {showInstallOutput && installationOutput && (
                                     <div className="mt-4">
                                         <div className="text-sm font-medium text-gray-700 mb-2">
@@ -153,7 +132,6 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
                                 )}
                             </div>
                         )}
-
                         <div className="flex justify-between items-center pt-2 border-t">
                             <Button
                                 variant="outline"
@@ -168,7 +146,6 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
                                 )}
                                 Check FFmpeg Status
                             </Button>
-
                             {ffmpegStatus.isInstalled && (
                                 <div className="text-sm text-green-600 font-medium">✓ Ready for video processing</div>
                             )}

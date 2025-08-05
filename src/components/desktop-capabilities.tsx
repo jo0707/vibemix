@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { FolderOpen, FileText, Terminal, Play, Info, ExternalLink, Monitor, HardDrive, Cpu } from "lucide-react"
 import { FFmpegStatus } from "./ffmpeg-status"
-
 export const DesktopCapabilities: React.FC = () => {
     const {
         isElectron,
@@ -22,27 +21,22 @@ export const DesktopCapabilities: React.FC = () => {
         onCommandOutput,
         removeAllCommandOutputListeners,
     } = useElectron()
-
     const [selectedPath, setSelectedPath] = useState<string>("")
     const [fileContent, setFileContent] = useState<string>("")
     const [commandInput, setCommandInput] = useState<string>("ls")
     const [commandOutput, setCommandOutput] = useState<string>("")
     const [directoryContents, setDirectoryContents] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
-
     useEffect(() => {
         if (!isElectron) return
-
         const unsubscribe = onCommandOutput((data) => {
             setCommandOutput((prev) => prev + data.data)
         })
-
         return () => {
             unsubscribe()
             removeAllCommandOutputListeners()
         }
     }, [isElectron, onCommandOutput, removeAllCommandOutputListeners])
-
     const handleSelectDirectory = async () => {
         try {
             const result = await selectDirectory()
@@ -57,7 +51,6 @@ export const DesktopCapabilities: React.FC = () => {
             console.error("Error selecting directory:", error)
         }
     }
-
     const handleSelectFile = async () => {
         try {
             const result = await selectFile([
@@ -75,10 +68,8 @@ export const DesktopCapabilities: React.FC = () => {
             console.error("Error selecting file:", error)
         }
     }
-
     const handleSaveFile = async () => {
         if (!selectedPath || !fileContent) return
-
         try {
             setIsLoading(true)
             const result = await writeFile(selectedPath, fileContent)
@@ -93,15 +84,12 @@ export const DesktopCapabilities: React.FC = () => {
             setIsLoading(false)
         }
     }
-
     const handleExecuteCommand = async () => {
         if (!commandInput.trim()) return
-
         try {
             setIsLoading(true)
             setCommandOutput("")
             const result = await executeCommand(commandInput, selectedPath || undefined)
-
             if (result.success) {
                 setCommandOutput(result.stdout || "")
                 if (result.stderr) {
@@ -117,11 +105,9 @@ export const DesktopCapabilities: React.FC = () => {
             setIsLoading(false)
         }
     }
-
     const handleOpenExternal = () => {
         openExternal("https://electronjs.org/")
     }
-
     if (!isElectron) {
         return (
             <Card className="w-full max-w-2xl mx-auto">
@@ -143,10 +129,9 @@ export const DesktopCapabilities: React.FC = () => {
             </Card>
         )
     }
-
     return (
         <div className="space-y-6 w-full max-w-4xl mx-auto">
-            {/* App Info */}
+            {}
             {appInfo && (
                 <Card>
                     <CardHeader>
@@ -177,11 +162,9 @@ export const DesktopCapabilities: React.FC = () => {
                     </CardContent>
                 </Card>
             )}
-
-            {/* FFmpeg Status */}
+            {}
             <FFmpegStatus />
-
-            {/* File System Operations */}
+            {}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -201,11 +184,9 @@ export const DesktopCapabilities: React.FC = () => {
                             Select File
                         </Button>
                     </div>
-
                     {selectedPath && (
                         <div className="space-y-2">
                             <p className="text-sm font-medium">Selected: {selectedPath}</p>
-
                             {directoryContents.length > 0 && (
                                 <div className="border rounded-lg p-3 max-h-40 overflow-y-auto">
                                     <p className="text-sm font-medium mb-2">Directory Contents:</p>
@@ -221,7 +202,6 @@ export const DesktopCapabilities: React.FC = () => {
                                     ))}
                                 </div>
                             )}
-
                             {fileContent && (
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center">
@@ -242,8 +222,7 @@ export const DesktopCapabilities: React.FC = () => {
                     )}
                 </CardContent>
             </Card>
-
-            {/* Terminal Operations */}
+            {}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -265,7 +244,6 @@ export const DesktopCapabilities: React.FC = () => {
                             Run
                         </Button>
                     </div>
-
                     {commandOutput && (
                         <div className="border rounded-lg p-3 bg-black text-green-400 font-mono text-sm max-h-60 overflow-y-auto">
                             <pre className="whitespace-pre-wrap">{commandOutput}</pre>
@@ -273,8 +251,7 @@ export const DesktopCapabilities: React.FC = () => {
                     )}
                 </CardContent>
             </Card>
-
-            {/* System Integration */}
+            {}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">

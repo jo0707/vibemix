@@ -1,61 +1,33 @@
 "use client"
-
 import { useState } from "react"
 import { FileUploadComponent } from "@/components/file-upload"
 import { ProjectConfigComponent } from "@/components/project-config"
 import { StatusResultComponent } from "@/components/status-result"
-import { useToast } from "@/hooks/use-toast"
-import { Film } from "lucide-react"
 import { DesktopCapabilities } from "@/components/desktop-capabilities"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useElectron } from "@/hooks/use-electron"
 import { useFFmpegStatus } from "@/hooks/use-ffmpeg-status"
-
-export type Status = "idle" | "processing" | "complete"
-
-export interface FileItem {
-    file: File
-    name: string
-    duration?: number
-}
-
+import { Film } from "lucide-react"
+import type { FileItem, ProcessingStatus, Status } from "@/types"
 export default function Home() {
     const [images, setImages] = useState<FileItem[]>([])
     const [audio, setAudio] = useState<FileItem[]>([])
-    const [processingStatus, setProcessingStatus] = useState<{
-        stage: string
-        progress: number
-        message: string
-        outputPath?: string
-        outputDir?: string
-    } | null>(null)
-
-    const { toast } = useToast()
+    const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null)
     const { isElectron } = useElectron()
     const { status: ffmpegStatus } = useFFmpegStatus()
-
     const handleFileChange = (newImages: FileItem[], newAudio: FileItem[]) => {
         setImages(newImages)
         setAudio(newAudio)
     }
-
-    const handleProcessingUpdate = (progress: {
-        stage: string
-        progress: number
-        message: string
-        outputPath?: string
-        outputDir?: string
-    }) => {
+    const handleProcessingUpdate = (progress: ProcessingStatus) => {
         setProcessingStatus(progress)
     }
-
-    const getStatusFromProcessing = () => {
-        if (!processingStatus || processingStatus.progress == 0) return "idle"
+    const getStatus = (): Status => {
+        if (!processingStatus || processingStatus.progress === 0) return "idle"
         if (processingStatus.stage === "complete") return "complete"
         if (processingStatus.stage === "error") return "idle"
         return "processing"
     }
-
     return (
         <main className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
             <div className="mx-auto max-w-7xl">
@@ -68,14 +40,12 @@ export default function Home() {
                         Create stunning video slideshows from your images with AI-powered soundtracks.
                     </p>
                 </header>
-
                 {isElectron ? (
                     <Tabs defaultValue="video-creator" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="video-creator">Video Creator</TabsTrigger>
                             <TabsTrigger value="desktop-features">Desktop Features</TabsTrigger>
                         </TabsList>
-
                         <TabsContent value="video-creator" className="mt-8">
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                                 <div className="lg:col-span-4 xl:col-span-3">
@@ -92,7 +62,7 @@ export default function Home() {
                                         onProcessingUpdate={handleProcessingUpdate}
                                     />
                                     <StatusResultComponent
-                                        status={getStatusFromProcessing() as Status}
+                                        status={getStatus()}
                                         progress={processingStatus?.progress || 0}
                                         videoUrl={processingStatus?.outputPath || null}
                                         outputDirectory={processingStatus?.outputDir}
@@ -100,7 +70,6 @@ export default function Home() {
                                 </div>
                             </div>
                         </TabsContent>
-
                         <TabsContent value="desktop-features" className="mt-8">
                             <DesktopCapabilities />
                         </TabsContent>
@@ -117,7 +86,7 @@ export default function Home() {
                                 onProcessingUpdate={handleProcessingUpdate}
                             />
                             <StatusResultComponent
-                                status={getStatusFromProcessing() as Status}
+                                status={getStatus()}
                                 progress={processingStatus?.progress || 0}
                                 videoUrl={processingStatus?.outputPath || null}
                                 outputDirectory={processingStatus?.outputDir}

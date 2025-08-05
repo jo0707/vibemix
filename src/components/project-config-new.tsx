@@ -1,4 +1,5 @@
 "use client"
+
 import React, { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,26 +14,32 @@ import { useOutputDirectory } from "@/hooks/use-output-directory"
 import { useToast } from "@/hooks/use-toast"
 import { formatDuration } from "@/lib/file-utils"
 import type { FileItem, VideoConfig, ProcessingStatus } from "@/types"
+
 interface Props {
     audioFiles: FileItem[]
     images: FileItem[]
     onProcessingUpdate?: (progress: ProcessingStatus) => void
 }
+
 export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate }: Props) {
     const { control, handleSubmit, watch } = useForm<VideoConfig>({
         defaultValues: { title: "", loopCount: 1, imageDuration: 3, processingDevice: "cpu" },
     })
+
     const { generateVideo, isProcessing, progress } = useVideoProcessor()
     const { isElectron } = useElectron()
     const { outputDirectory, selectOutputDirectory, openOutputDirectory } = useOutputDirectory()
     const { toast } = useToast()
+
     const hasAudio = audioFiles.length > 0
     const hasImages = images.length > 0
     const loopCount = watch("loopCount")
+
     const totalDuration = useMemo(() => {
         const singleLoopDuration = audioFiles.reduce((acc: number, file: FileItem) => acc + (file.duration || 0), 0)
         return singleLoopDuration * (loopCount > 0 ? loopCount : 1)
     }, [audioFiles, loopCount])
+
     const onSubmit = async (data: VideoConfig) => {
         if (!isElectron) {
             toast({
@@ -42,18 +49,23 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
             })
             return
         }
+
         if (!hasImages) {
             toast({ variant: "destructive", title: "No Images", description: "Please upload at least one image." })
             return
         }
+
         if (!hasAudio) {
             toast({ variant: "destructive", title: "No Audio", description: "Please upload at least one audio file." })
             return
         }
+
         try {
             const result = await generateVideo(data, images, audioFiles, outputDirectory || undefined)
+
             if (result.success) {
                 toast({ title: "Video Generated Successfully!", description: `Video saved to: ${result.outputPath}` })
+
                 onProcessingUpdate?.({
                     stage: "complete",
                     progress: 100,
@@ -76,11 +88,13 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
             })
         }
     }
+
     React.useEffect(() => {
         if (onProcessingUpdate && progress) {
             onProcessingUpdate(progress)
         }
     }, [progress, onProcessingUpdate])
+
     const handleOpenOutputDirectory = async () => {
         if (progress?.outputDir) {
             try {
@@ -90,6 +104,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
             }
         }
     }
+
     return (
         <Card className="shadow-md border-gray-200">
             <CardHeader>
@@ -118,6 +133,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                         </p>
                     )}
                 </div>
+
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <div className="space-y-4">
                         <div className="space-y-2">
@@ -138,6 +154,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                                 )}
                             />
                         </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="loopCount" className="font-medium text-gray-700">
@@ -163,6 +180,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                                     )}
                                 />
                             </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="imageDuration" className="font-medium text-gray-700">
                                     Image Duration (s)
@@ -188,6 +206,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                                 />
                             </div>
                         </div>
+
                         <div className="space-y-2">
                             <Label className="font-medium text-gray-700">Estimated Length</Label>
                             <div className="flex items-center justify-center h-10 w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm text-muted-foreground">
@@ -195,6 +214,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                                 <span>{formatDuration(totalDuration)}</span>
                             </div>
                         </div>
+
                         <div className="space-y-2">
                             <Label className="font-medium text-gray-700">Processing Device</Label>
                             <Controller
@@ -219,6 +239,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                             />
                         </div>
                     </div>
+
                     {isProcessing && (
                         <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                             <div className="flex justify-between items-center">
@@ -252,6 +273,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                             </div>
                         </div>
                     )}
+
                     <div className="flex gap-3">
                         <Button
                             type="submit"
@@ -266,6 +288,7 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                             )}
                             {isProcessing ? "Processing..." : "Generate Video"}
                         </Button>
+
                         {!isElectron && (
                             <div className="flex-1 flex items-center justify-center text-sm text-gray-500 bg-gray-100 rounded-md px-4">
                                 Desktop app required for processing
