@@ -37,7 +37,7 @@ export default function Home() {
                         <h1 className="text-4xl font-bold tracking-tighter text-gray-900">VibeMix</h1>
                     </div>
                     <p className="text-lg text-muted-foreground">
-                        Create stunning video slideshows from your images with AI-powered soundtracks.
+                        Create music compilation videos from your images and songs instantly!
                     </p>
                 </header>
                 {isElectron ? (

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react"
 import { useElectron } from "./use-electron"
 import { sanitizeFilename, extractFFmpegProgress } from "@/lib/file-utils"
 import type { VideoConfig, FileItem, ProcessingStatus } from "@/types"
+
 export const useVideoProcessor = () => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [progress, setProgress] = useState<ProcessingStatus>({
