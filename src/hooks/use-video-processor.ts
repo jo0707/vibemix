@@ -169,12 +169,14 @@ export const useVideoProcessor = () => {
                         .join("; ")
                     const videoConcat = `[${images.map((_, i) => `v${i}`).join("][")}]concat=n=${
                         images.length
-                    }:v=1:a=0[v]`
+                    }:v=1:a=0[segment]`
+                    const videoLoop = `[segment]fps=25,loop=loop=-1:size=${
+                        config.imageDuration * 25 * images.length
+                    }[v]`
                     const audioConcat = `[${audio.map((_, i) => `${images.length + i}:a`).join("][")}]concat=n=${
                         audio.length
-                    }:v=0:a=1[a_cat]`
-                    const audioLoop = `[a_cat]aloop=loop=${config.loopCount - 1}:size=220500000[a]`
-                    const cpuCommand = `ffmpeg ${imageInputs} ${audioInputs} -filter_complex "${videoFilter}; ${videoConcat}; ${audioConcat}; ${audioLoop}" -map "[v]" -map "[a]" -c:v libx264 -c:a aac -shortest "${outputVideoPath}"`
+                    }:v=0:a=1[a]`
+                    const cpuCommand = `ffmpeg -y ${imageInputs} ${audioInputs} -filter_complex "${videoFilter}; ${videoConcat}; ${videoLoop}; ${audioConcat}" -map "[v]" -map "[a]" -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -c:a aac -shortest "${outputVideoPath}"`
                     const terminalCommand = `start "VibeMix CPU Processing" cmd /c "echo Starting CPU video processing... && echo This may take several minutes depending on your hardware && echo. && cd /d "${tempDir}" && ${cpuCommand} && echo. && echo Video created successfully at: ${outputVideoPath} && echo. && echo Terminal will close in 5 seconds... && timeout /t 5 /nobreak >nul"`
                     const result = await executeCommand(terminalCommand, tempDir)
                 }

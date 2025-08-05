@@ -12,7 +12,7 @@ export function SongsList({ audioFiles }: SongsListProps) {
     const formatTime = (seconds: number): string => {
         const minutes = Math.floor(seconds / 60)
         const remainingSeconds = Math.floor(seconds % 60)
-        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
+        return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
     }
 
     const getSongEntries = () => {
@@ -23,7 +23,7 @@ export function SongsList({ audioFiles }: SongsListProps) {
             const entry = {
                 number: index + 1,
                 filename,
-                startTime: formatTime(startTime)
+                startTime: formatTime(startTime),
             }
             currentTime += audio.duration || 0
             return entry
