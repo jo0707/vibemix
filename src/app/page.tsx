@@ -7,8 +7,8 @@ import { DesktopCapabilities } from "@/components/desktop-capabilities"
 import { SongsList } from "@/components/songs-list"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useElectron } from "@/hooks/use-electron"
-import { Film } from "lucide-react"
 import type { FileItem, ProcessingStatus, Status } from "@/types"
+
 export default function Home() {
     const [images, setImages] = useState<FileItem[]>([])
     const [audio, setAudio] = useState<FileItem[]>([])
