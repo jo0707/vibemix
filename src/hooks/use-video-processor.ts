@@ -186,8 +186,8 @@ export const useVideoProcessor = () => {
                     progress: 80,
                     message: "Waiting for processing to complete... (monitor the terminal window)",
                 })
-                const maxWaitTime = 10 * 1000 // 10 second
-                const pollInterval = 2000 // 2 seconds
+                const maxWaitTime = 10 * 1000
+                const pollInterval = 2000
                 let waitTime = 0
                 let outputExists = false
                 while (waitTime < maxWaitTime && !outputExists) {

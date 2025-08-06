@@ -32,7 +32,7 @@ export default function Home() {
             <div className="mx-auto max-w-7xl">
                 <header className="mb-12 text-center">
                     <div className="inline-flex items-center gap-3 mb-2">
-                        <Film className="w-8 h-8 text-primary" />
+                        <img src="/logo.png" alt="VibeMix Logo" className="h-16 w-16" />
                         <h1 className="text-4xl font-bold tracking-tighter text-gray-900">VibeMix</h1>
                     </div>
                     <p className="text-lg text-muted-foreground">

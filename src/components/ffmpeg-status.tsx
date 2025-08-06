@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, XCircle, Download, Terminal, AlertTriangle, Loader2 } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { CheckCircle, XCircle, Download, Terminal, AlertTriangle, Loader2, Copy } from "lucide-react"
 import { useElectron } from "@/hooks/use-electron"
 import { useFFmpegStatus } from "@/hooks/use-ffmpeg-status"
 import { useToast } from "@/hooks/use-toast"
@@ -14,29 +15,114 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
     const [isInstalling, setIsInstalling] = useState(false)
     const [installationOutput, setInstallationOutput] = useState<string>("")
     const [showInstallOutput, setShowInstallOutput] = useState(false)
-    const { isElectron, executeCommand } = useElectron()
+    const { isElectron, executeCommand, appInfo } = useElectron()
     const { status: ffmpegStatus, refresh: checkFfmpegStatus } = useFFmpegStatus()
     const { toast } = useToast()
+
+    const platform = appInfo?.platform || "unknown"
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            toast({
+                title: "Copied!",
+                description: "Command copied to clipboard",
+            })
+        })
+    }
+
+    const getInstallationInstructions = () => {
+        switch (platform) {
+            case "win32":
+                return {
+                    title: "Windows Installation",
+                    method: "winget",
+                    command: "winget install -e --id Gyan.FFmpeg",
+                    alternative: {
+                        method: "Manual Download",
+                        steps: [
+                            "1. Visit https://www.gyan.dev/ffmpeg/builds/",
+                            "2. Download the latest release build",
+                            "3. Extract to a folder (e.g., C:\\ffmpeg)",
+                            "4. Add C:\\ffmpeg\\bin to your PATH environment variable",
+                        ],
+                    },
+                }
+            case "darwin":
+                return {
+                    title: "macOS Installation",
+                    method: "Homebrew",
+                    command: "brew install ffmpeg",
+                    alternative: {
+                        method: "MacPorts",
+                        steps: [
+                            "1. Install MacPorts from https://www.macports.org/",
+                            "2. Run: sudo port install ffmpeg",
+                        ],
+                    },
+                }
+            case "linux":
+                return {
+                    title: "Linux Installation",
+                    method: "Package Manager",
+                    command: "sudo apt update && sudo apt install ffmpeg",
+                    alternative: {
+                        method: "Other Distributions",
+                        steps: [
+                            "Ubuntu/Debian: sudo apt install ffmpeg",
+                            "CentOS/RHEL: sudo yum install ffmpeg",
+                            "Fedora: sudo dnf install ffmpeg",
+                            "Arch Linux: sudo pacman -S ffmpeg",
+                        ],
+                    },
+                }
+            default:
+                return {
+                    title: "Installation Required",
+                    method: "Manual Installation",
+                    command: "Please install FFmpeg for your operating system",
+                    alternative: {
+                        method: "Visit Official Website",
+                        steps: ["Visit https://ffmpeg.org/download.html for platform-specific instructions"],
+                    },
+                }
+        }
+    }
+
+    const installInstructions = getInstallationInstructions()
     useEffect(() => {
         if (ffmpegStatus.hasChecked) {
             onStatusChange?.(ffmpegStatus.isInstalled)
         }
     }, [ffmpegStatus.hasChecked, ffmpegStatus.isInstalled, onStatusChange])
     const handleInstallFFmpeg = async () => {
+        if (platform !== "win32") {
+            toast({
+                title: "Manual Installation Required",
+                description: "Please use the terminal commands shown below for your platform",
+                variant: "default",
+            })
+            return
+        }
+
         setIsInstalling(true)
         setShowInstallOutput(true)
         setInstallationOutput("Starting FFmpeg installation...\n")
+
         try {
             const terminalCommand = `start "FFmpeg Installation" cmd /k "echo Installing FFmpeg via winget... && echo This may take a few minutes && echo. && winget install -e --id Gyan.FFmpeg && echo. && echo Installation complete! You may need to restart VibeMix. && echo Press any key to close this window... && pause >nul"`
+
             await executeCommand(terminalCommand)
             await new Promise((resolve) => setTimeout(resolve, 2000))
+
             setInstallationOutput((prev) => prev + "Installation started in terminal window...\n")
             setInstallationOutput((prev) => prev + "Please wait for the installation to complete.\n")
             setInstallationOutput((prev) => prev + "You may need to restart VibeMix after installation.\n")
+
             toast({
                 title: "Installation Started",
                 description: "FFmpeg installation is running in a terminal window. Please wait for it to complete.",
             })
+
             setTimeout(() => {
                 setIsInstalling(false)
                 toast({
@@ -56,7 +142,7 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
         }
     }
     if (!isElectron) {
-        return null // Only show in Electron app
+        return null
     }
     return (
         <Card className="shadow-md border-gray-200">
@@ -98,28 +184,105 @@ export function FFmpegStatus({ onStatusChange }: FFmpegStatusProps) {
                             </Alert>
                         )}
                         {!ffmpegStatus.isInstalled && (
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 <Alert className="border-yellow-200 bg-yellow-50">
                                     <AlertTriangle className="h-4 w-4 text-yellow-600" />
                                     <AlertDescription className="text-yellow-800">
-                                        <div className="font-medium">Installation Instructions</div>
-                                        <div className="text-sm mt-2 space-y-1">
-                                            <div>1. Click "Install FFmpeg" below to start automatic installation</div>
-                                            <div>2. Wait for the installation to complete in the terminal window</div>
-                                            <div>3. Restart VibeMix after installation</div>
+                                        <div className="font-medium">FFmpeg Installation Required</div>
+                                        <div className="text-sm mt-1">
+                                            Choose your installation method below based on your operating system.
                                         </div>
                                     </AlertDescription>
                                 </Alert>
-                                <div className="flex gap-3">
-                                    <Button onClick={handleInstallFFmpeg} disabled={isInstalling} className="flex-1">
-                                        {isInstalling ? (
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        ) : (
-                                            <Download className="w-4 h-4 mr-2" />
-                                        )}
-                                        {isInstalling ? "Installing..." : "Install FFmpeg"}
-                                    </Button>
-                                </div>
+
+                                <Tabs defaultValue="primary" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="primary">{installInstructions.method}</TabsTrigger>
+                                        <TabsTrigger value="alternative">Alternative</TabsTrigger>
+                                    </TabsList>
+
+                                    <TabsContent value="primary" className="space-y-3 mt-4">
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h4 className="font-medium text-gray-900 mb-2">
+                                                {installInstructions.title}
+                                            </h4>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <code className="flex-1 bg-gray-900 text-green-400 px-3 py-2 rounded font-mono text-sm">
+                                                        {installInstructions.command}
+                                                    </code>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => copyToClipboard(installInstructions.command)}
+                                                    >
+                                                        <Copy className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                                {platform === "win32" && (
+                                                    <Button
+                                                        onClick={handleInstallFFmpeg}
+                                                        disabled={isInstalling}
+                                                        className="w-full"
+                                                    >
+                                                        {isInstalling ? (
+                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        ) : (
+                                                            <Download className="w-4 h-4 mr-2" />
+                                                        )}
+                                                        {isInstalling ? "Installing..." : "Auto Install (Windows)"}
+                                                    </Button>
+                                                )}
+                                                {platform !== "win32" && (
+                                                    <div className="text-sm text-gray-600 mt-2">
+                                                        Please run the command above in your terminal
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="alternative" className="space-y-3 mt-4">
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h4 className="font-medium text-gray-900 mb-2">
+                                                {installInstructions.alternative.method}
+                                            </h4>
+                                            <div className="space-y-1">
+                                                {installInstructions.alternative.steps.map((step, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="text-sm text-gray-700 flex items-start gap-2"
+                                                    >
+                                                        {step.includes("sudo") || step.includes("http") ? (
+                                                            <>
+                                                                <span className="flex-1">{step}</span>
+                                                                {(step.includes("sudo") ||
+                                                                    step.includes("brew") ||
+                                                                    step.includes("port")) && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        onClick={() =>
+                                                                            copyToClipboard(
+                                                                                step.replace(/^\d+\.\s*/, "")
+                                                                            )
+                                                                        }
+                                                                        className="h-6 px-2"
+                                                                    >
+                                                                        <Copy className="w-3 h-3" />
+                                                                    </Button>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <span>{step}</span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
+
                                 {showInstallOutput && installationOutput && (
                                     <div className="mt-4">
                                         <div className="text-sm font-medium text-gray-700 mb-2">

@@ -3,9 +3,11 @@ import { spawn, exec } from "child_process"
 import * as path from "path"
 import * as fs from "fs"
 import { promisify } from "util"
+
 const execAsync = promisify(exec)
 const isDev = process.env.NODE_ENV === "development"
 let mainWindow: BrowserWindow
+
 function createWindow(): void {
     mainWindow = new BrowserWindow({
         height: 900,
@@ -44,6 +46,7 @@ function createWindow(): void {
         mainWindow = null as any
     })
 }
+
 app.whenReady().then(() => {
     if (!isDev) {
         protocol.registerFileProtocol("file", (request, callback) => {
@@ -53,16 +56,19 @@ app.whenReady().then(() => {
     }
     createWindow()
 })
+
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
         app.quit()
     }
 })
+
 app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow()
     }
 })
+
 ipcMain.handle("read-file", async (_, filePath: string) => {
     try {
         const content = await fs.promises.readFile(filePath, "utf-8")
@@ -71,6 +77,7 @@ ipcMain.handle("read-file", async (_, filePath: string) => {
         return { success: false, error: (error as Error).message }
     }
 })
+
 ipcMain.handle("write-file", async (_, filePath: string, content: string, encoding?: "utf-8" | "base64") => {
     try {
         if (encoding === "base64") {
@@ -84,6 +91,7 @@ ipcMain.handle("write-file", async (_, filePath: string, content: string, encodi
         return { success: false, error: (error as Error).message }
     }
 })
+
 ipcMain.handle("read-directory", async (_, dirPath: string) => {
     try {
         const files = await fs.promises.readdir(dirPath, { withFileTypes: true })
@@ -97,6 +105,7 @@ ipcMain.handle("read-directory", async (_, dirPath: string) => {
         return { success: false, error: (error as Error).message }
     }
 })
+
 ipcMain.handle("select-directory", async () => {
     try {
         const result = await dialog.showOpenDialog(mainWindow, {
@@ -110,6 +119,7 @@ ipcMain.handle("select-directory", async () => {
         return { success: false, error: (error as Error).message }
     }
 })
+
 ipcMain.handle("select-file", async (_, filters?: { name: string; extensions: string[] }[]) => {
     try {
         const result = await dialog.showOpenDialog(mainWindow, {
@@ -124,6 +134,7 @@ ipcMain.handle("select-file", async (_, filters?: { name: string; extensions: st
         return { success: false, error: (error as Error).message }
     }
 })
+
 ipcMain.handle("execute-command", async (_, command: string, cwd?: string) => {
     try {
         const { stdout, stderr } = await execAsync(command, {
@@ -144,6 +155,7 @@ ipcMain.handle("execute-command", async (_, command: string, cwd?: string) => {
         }
     }
 })
+
 ipcMain.handle("spawn-command", (_, command: string, args: string[], cwd?: string) => {
     return new Promise((resolve) => {
         const child = spawn(command, args, {
@@ -184,6 +196,7 @@ ipcMain.handle("spawn-command", (_, command: string, args: string[], cwd?: strin
         })
     })
 })
+
 ipcMain.handle("open-external", async (_, url: string) => {
     try {
         await shell.openExternal(url)
@@ -192,6 +205,7 @@ ipcMain.handle("open-external", async (_, url: string) => {
         return { success: false, error: (error as Error).message }
     }
 })
+
 ipcMain.handle("open-directory", async (_, dirPath: string) => {
     try {
         await shell.showItemInFolder(dirPath)
@@ -200,13 +214,14 @@ ipcMain.handle("open-directory", async (_, dirPath: string) => {
         return { success: false, error: (error as Error).message }
     }
 })
+
 ipcMain.handle("check-ffmpeg", async () => {
     try {
         const { stdout } = await execAsync("ffmpeg -version")
         return {
             success: true,
             installed: true,
-            version: stdout.split("\n")[0], // First line contains version info
+            version: stdout.split("\n")[0],
         }
     } catch (error) {
         return {
@@ -216,11 +231,12 @@ ipcMain.handle("check-ffmpeg", async () => {
         }
     }
 })
+
 ipcMain.handle("install-ffmpeg", async () => {
     try {
         const command = "winget install -e --id Gyan.FFmpeg"
         const { stdout, stderr } = await execAsync(command, {
-            maxBuffer: 1024 * 1024 * 50, // 50MB buffer for installation output
+            maxBuffer: 1024 * 1024 * 50,
         })
         return {
             success: true,
@@ -236,6 +252,7 @@ ipcMain.handle("install-ffmpeg", async () => {
         }
     }
 })
+
 ipcMain.handle("get-app-info", () => {
     return {
         version: app.getVersion(),

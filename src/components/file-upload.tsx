@@ -8,51 +8,140 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { getFileBaseName, getFileExtension, getAudioDuration } from "@/lib/file-utils"
 import type { FileItem } from "@/types"
+
+// Supported file types
+const SUPPORTED_IMAGE_TYPES = [
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/gif",
+    "image/bmp",
+    "image/webp",
+    "image/tiff",
+]
+
+const SUPPORTED_AUDIO_TYPES = [
+    "audio/mpeg",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/aac",
+    "audio/ogg",
+    "audio/flac",
+    "audio/mp4",
+    "audio/x-m4a",
+    "audio/x-ms-wma",
+]
+
 interface Props {
     onFileChange: (images: FileItem[], audio: FileItem[]) => void
     images: FileItem[]
     audio: FileItem[]
 }
+
+interface EditingState {
+    index: number
+    name: string
+}
+
+// Helper functions
+const validateFile = (file: File, type: "image" | "audio"): boolean => {
+    const supportedTypes = type === "image" ? SUPPORTED_IMAGE_TYPES : SUPPORTED_AUDIO_TYPES
+    return supportedTypes.includes(file.type)
+}
+
+const getFileTypeDisplay = (types: string[]): string => {
+    const extensions = types.map((type) => {
+        const ext = type.split("/")[1].toUpperCase()
+        return ext === "MPEG"
+            ? "MP3"
+            : ext === "X-WAV"
+            ? "WAV"
+            : ext === "X-M4A"
+            ? "M4A"
+            : ext === "X-MS-WMA"
+            ? "WMA"
+            : ext
+    })
+    return extensions.join(", ")
+}
+
 export function FileUploadComponent({ onFileChange, images, audio }: Props) {
     const [isDragging, setIsDragging] = useState(false)
-    const [editingImage, setEditingImage] = useState<{ index: number; name: string } | null>(null)
-    const [editingAudio, setEditingAudio] = useState<{ index: number; name: string } | null>(null)
+    const [editingImage, setEditingImage] = useState<EditingState | null>(null)
+    const [editingAudio, setEditingAudio] = useState<EditingState | null>(null)
     const imageInputRef = useRef<HTMLInputElement>(null)
     const audioInputRef = useRef<HTMLInputElement>(null)
     const { toast } = useToast()
+
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault()
         e.stopPropagation()
         setIsDragging(e.type === "dragenter" || e.type === "dragover")
     }
+
     const processFiles = async (files: File[]) => {
-        const newImageFiles = files.filter((file) => file.type.startsWith("image/"))
-        const newAudioFiles = files.filter((file) => file.type.startsWith("audio/"))
-        const newImages: FileItem[] = newImageFiles.map((file) => ({ file, name: file.name, duration: 3 }))
+        const imageFiles = files.filter((file) => validateFile(file, "image"))
+        const audioFiles = files.filter((file) => validateFile(file, "audio"))
+        const invalidFiles = files.filter((file) => !validateFile(file, "image") && !validateFile(file, "audio"))
+
+        if (invalidFiles.length > 0) {
+            toast({
+                title: "Invalid files",
+                description: `${invalidFiles.length} file(s) skipped. Only ${getFileTypeDisplay([
+                    ...SUPPORTED_IMAGE_TYPES,
+                    ...SUPPORTED_AUDIO_TYPES,
+                ])} are supported.`,
+                variant: "destructive",
+            })
+        }
+
+        const newImages: FileItem[] = imageFiles.map((file) => ({
+            file,
+            name: file.name,
+            duration: 3,
+        }))
+
         const newAudios: FileItem[] = await Promise.all(
-            newAudioFiles.map(async (file) => ({
+            audioFiles.map(async (file) => ({
                 file,
                 name: file.name,
                 duration: await getAudioDuration(file),
             }))
         )
+
         onFileChange([...images, ...newImages], [...audio, ...newAudios])
+
         if (newImages.length > 0) {
-            toast({ title: "Images added", description: `${newImages.length} image(s) added.` })
+            toast({
+                title: "Images added",
+                description: `${newImages.length} image(s) added successfully.`,
+            })
         }
         if (newAudios.length > 0) {
-            toast({ title: "Audio added", description: `${newAudios.length} audio file(s) added.` })
+            toast({
+                title: "Audio added",
+                description: `${newAudios.length} audio file(s) added successfully.`,
+            })
         }
     }
+
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault()
         e.stopPropagation()
         setIsDragging(false)
         processFiles(Array.from(e.dataTransfer.files))
     }
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        processFiles(Array.from(e.target.files || []))
+
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        processFiles(files.filter((file) => validateFile(file, "image")))
     }
+
+    const handleAudioSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        processFiles(files.filter((file) => validateFile(file, "audio")))
+    }
+
     const removeFile = (index: number, type: "image" | "audio") => {
         if (type === "image") {
             const newImages = [...images]
@@ -66,22 +155,27 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
             toast({ title: "Audio removed", description: `"${removed.name}" removed.` })
         }
     }
+
     const startRename = (index: number, type: "image" | "audio") => {
         const file = type === "image" ? images[index] : audio[index]
         const editState = { index, name: getFileBaseName(file.name) }
+
         if (type === "image") {
             setEditingImage(editState)
         } else {
             setEditingAudio(editState)
         }
     }
+
     const saveRename = (type: "image" | "audio") => {
         const editState = type === "image" ? editingImage : editingAudio
         if (!editState) return
+
         const files = type === "image" ? [...images] : [...audio]
         const originalName = files[editState.index].name
         const extension = getFileExtension(originalName)
         files[editState.index].name = editState.name.trim() ? `${editState.name}${extension}` : originalName
+
         if (type === "image") {
             onFileChange(files as FileItem[], audio)
             setEditingImage(null)
@@ -89,9 +183,14 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
             onFileChange(images, files as FileItem[])
             setEditingAudio(null)
         }
-        toast({ title: "File renamed", description: `Renamed to "${files[editState.index].name}".` })
+
+        toast({
+            title: "File renamed",
+            description: `Renamed to "${files[editState.index].name}".`,
+        })
     }
-    const randomize = (type: "image" | "audio") => {
+
+    const randomizeOrder = (type: "image" | "audio") => {
         if (type === "image") {
             onFileChange(
                 [...images].sort(() => Math.random() - 0.5),
@@ -103,7 +202,12 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
                 [...audio].sort(() => Math.random() - 0.5)
             )
         }
+        toast({
+            title: `${type === "image" ? "Images" : "Audio files"} randomized`,
+            description: "File order has been shuffled.",
+        })
     }
+
     const DropZone = ({
         onSelect,
         accept,
@@ -137,6 +241,7 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
             />
         </div>
     )
+
     const FileList = ({
         files,
         editingState,
@@ -147,7 +252,7 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
         type,
     }: {
         files: FileItem[]
-        editingState: { index: number; name: string } | null
+        editingState: EditingState | null
         onEdit: (index: number) => void
         onSave: () => void
         onRemove: (index: number) => void
@@ -206,6 +311,7 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
             ))}
         </div>
     )
+
     return (
         <Card
             onDragEnter={handleDrag}
@@ -223,14 +329,14 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
                 <div>
                     <h3 className="mb-2 font-medium text-gray-700">Images</h3>
                     <DropZone
-                        onSelect={handleFileSelect}
-                        accept="image/*,audio/*"
+                        onSelect={handleImageSelect}
+                        accept={SUPPORTED_IMAGE_TYPES.join(",")}
                         inputRef={imageInputRef}
                         multiple={true}
                     >
                         <UploadCloud className="w-10 h-10 mb-2 text-gray-400" />
-                        <p className="font-semibold text-primary">Click to upload</p>
-                        <p className="text-sm text-muted-foreground">or drag and drop</p>
+                        <p className="font-semibold text-primary">Click to upload images</p>
+                        <p className="text-sm text-muted-foreground">PNG, JPG, GIF, BMP, WEBP, TIFF</p>
                     </DropZone>
                     {images.length > 0 && (
                         <FileList
@@ -244,7 +350,12 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
                         />
                     )}
                     {images.length > 1 && (
-                        <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => randomize("image")}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={() => randomizeOrder("image")}
+                        >
                             <Shuffle className="w-4 h-4 mr-2" />
                             Randomize Order
                         </Button>
@@ -253,14 +364,14 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
                 <div>
                     <h3 className="mb-2 font-medium text-gray-700">Soundtracks</h3>
                     <DropZone
-                        onSelect={handleFileSelect}
-                        accept="image/*,audio/*"
+                        onSelect={handleAudioSelect}
+                        accept={SUPPORTED_AUDIO_TYPES.join(",")}
                         inputRef={audioInputRef}
                         multiple={true}
                     >
                         <Music className="w-10 h-10 mb-2 text-gray-400" />
                         <p className="font-semibold text-primary">Upload audio files</p>
-                        <p className="text-sm text-muted-foreground">or drop them here</p>
+                        <p className="text-sm text-muted-foreground">MP3, WAV, AAC, OGG, FLAC, M4A, WMA</p>
                     </DropZone>
                     {audio.length > 0 && (
                         <FileList
@@ -274,7 +385,12 @@ export function FileUploadComponent({ onFileChange, images, audio }: Props) {
                         />
                     )}
                     {audio.length > 1 && (
-                        <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => randomize("audio")}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={() => randomizeOrder("audio")}
+                        >
                             <Shuffle className="w-4 h-4 mr-2" />
                             Randomize Order
                         </Button>
