@@ -38,10 +38,7 @@ export function SongsList({ audioFiles }: SongsListProps) {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Music className="w-5 h-5" />
-                        Songs List
-                    </CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-xl">Songs List</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-muted-foreground text-sm">
@@ -58,10 +55,7 @@ export function SongsList({ audioFiles }: SongsListProps) {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Music className="w-5 h-5" />
-                        Songs List
-                    </div>
+                    <div className="flex items-center gap-2 text-xl">Songs List</div>
                     <div className="flex items-center space-x-2">
                         <Switch id="timestamp-toggle" checked={showTimestamp} onCheckedChange={setShowTimestamp} />
                         <Label htmlFor="timestamp-toggle" className="text-sm font-normal">

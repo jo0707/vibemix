@@ -12,7 +12,7 @@ function createWindow(): void {
         width: 1400,
         minHeight: 600,
         minWidth: 800,
-        icon: isDev 
+        icon: isDev
             ? path.join(__dirname, "../public/logo_256x256.png")
             : path.join(__dirname, "../out/logo_256x256.png"),
         webPreferences: {
