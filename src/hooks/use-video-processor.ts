@@ -212,9 +212,24 @@ export const useVideoProcessor = () => {
                         message: `Waiting for processing... (${Math.floor(waitTime / 1000)}s elapsed)`,
                     })
                 }
+                if (outputExists && config.cutEnabled && config.cutInterval && config.cutInterval > 0) {
+                    setProgress({
+                        stage: "finalizing",
+                        progress: 95,
+                        message: `Cutting video into ${config.cutInterval}-minute segments...`,
+                    })
+                    const segmentsDir = `${finalOutputDir}\\${projectName}_segments`
+                    await executeCommand(`mkdir "${segmentsDir}"`, finalOutputDir)
+                    const segmentTimeInSeconds = config.cutInterval * 60
+                    const segmentOutputPath = `${segmentsDir}\\${projectName}_part_%03d.mp4`
+                    const cutCommand = `ffmpeg -i "${outputVideoPath}" -c copy -map 0 -segment_time ${segmentTimeInSeconds} -f segment -reset_timestamps 1 "${segmentOutputPath}"`
+                    const terminalCommand = `start "VibeMix Video Cutting" cmd /c "echo Starting video cutting... && cd /d "${finalOutputDir}" && ${cutCommand} && echo. && echo Video segments created in: ${segmentsDir} && echo. && echo Terminal will close in 5 seconds... && timeout /t 5 /nobreak >nul"`
+                    await executeCommand(terminalCommand, finalOutputDir)
+                    await new Promise((resolve) => setTimeout(resolve, 5000))
+                }
                 setProgress({
                     stage: "finalizing",
-                    progress: 90,
+                    progress: 98,
                     message: "Cleaning up temporary files...",
                 })
                 await executeCommand(`rmdir /s /q "${tempDir}"`, finalOutputDir)

@@ -13,14 +13,22 @@ import { useOutputDirectory } from "@/hooks/use-output-directory"
 import { useToast } from "@/hooks/use-toast"
 import { formatDuration } from "@/lib/file-utils"
 import type { FileItem, VideoConfig, ProcessingStatus } from "@/types"
+import { Checkbox } from "./ui/checkbox"
 interface Props {
     audioFiles: FileItem[]
     images: FileItem[]
-    onProcessingUpdate?: (progress: ProcessingStatus) => void
+    onProcessingUpdate?: (progress: ProcessingStatus, config?: VideoConfig) => void
 }
 export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate }: Props) {
     const { control, handleSubmit, watch } = useForm<VideoConfig>({
-        defaultValues: { title: "", loopCount: 1, imageDuration: 3, processingDevice: "cpu" },
+        defaultValues: {
+            title: "",
+            loopCount: 1,
+            imageDuration: 3,
+            processingDevice: "cpu",
+            cutEnabled: false,
+            cutInterval: 10,
+        },
     })
     const { generateVideo, isProcessing, progress } = useVideoProcessor()
     const { isElectron } = useElectron()
@@ -29,10 +37,19 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
     const hasAudio = audioFiles.length > 0
     const hasImages = images.length > 0
     const loopCount = watch("loopCount")
+    const cutEnabled = watch("cutEnabled")
+    const cutInterval = watch("cutInterval")
     const totalDuration = useMemo(() => {
         const singleLoopDuration = audioFiles.reduce((acc: number, file: FileItem) => acc + (file.duration || 0), 0)
         return singleLoopDuration * (loopCount > 0 ? loopCount : 1)
     }, [audioFiles, loopCount])
+    const segmentCount = useMemo(() => {
+        if (!cutEnabled || !cutInterval || cutInterval <= 0 || totalDuration <= 0) {
+            return 0
+        }
+        const cutIntervalSeconds = cutInterval * 60
+        return Math.ceil(totalDuration / cutIntervalSeconds)
+    }, [totalDuration, cutInterval, cutEnabled])
     const onSubmit = async (data: VideoConfig) => {
         if (!isElectron) {
             toast({
@@ -54,13 +71,16 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
             const result = await generateVideo(data, images, audioFiles, outputDirectory || undefined)
             if (result.success) {
                 toast({ title: "Video Generated Successfully!", description: `Video saved to: ${result.outputPath}` })
-                onProcessingUpdate?.({
-                    stage: "complete",
-                    progress: 100,
-                    message: "Video generation complete!",
-                    outputPath: result.outputPath,
-                    outputDir: result.outputDir,
-                })
+                onProcessingUpdate?.(
+                    {
+                        stage: "complete",
+                        progress: 100,
+                        message: "Video generation complete!",
+                        outputPath: result.outputPath,
+                        outputDir: result.outputDir,
+                    },
+                    data
+                )
             } else {
                 toast({
                     variant: "destructive",
@@ -78,9 +98,9 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
     }
     React.useEffect(() => {
         if (onProcessingUpdate && progress) {
-            onProcessingUpdate(progress)
+            onProcessingUpdate(progress, watch())
         }
-    }, [progress, onProcessingUpdate])
+    }, [progress, onProcessingUpdate, watch])
     const handleOpenOutputDirectory = async () => {
         if (progress?.outputDir) {
             try {
@@ -188,6 +208,58 @@ export function ProjectConfigComponent({ audioFiles, images, onProcessingUpdate 
                                 />
                             </div>
                         </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <Controller
+                                    name="cutEnabled"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Checkbox
+                                            id="cutEnabled"
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    )}
+                                />
+                                <Label htmlFor="cutEnabled" className="font-medium text-gray-700">
+                                    Cut video into segments
+                                </Label>
+                            </div>
+                        </div>
+                        {cutEnabled && (
+                            <div className="space-y-2">
+                                <Label htmlFor="cutInterval" className="font-medium text-gray-700">
+                                    Segment Length (minutes)
+                                </Label>
+                                <Controller
+                                    name="cutInterval"
+                                    control={control}
+                                    rules={{
+                                        min: { value: 1, message: "Must be at least 1 minute" },
+                                        required: "Segment length is required",
+                                    }}
+                                    render={({ field, fieldState }) => (
+                                        <>
+                                            <Input
+                                                id="cutInterval"
+                                                type="number"
+                                                min="1"
+                                                {...field}
+                                                onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                                            />
+                                            {fieldState.error && (
+                                                <p className="text-sm text-red-600">{fieldState.error.message}</p>
+                                            )}
+                                        </>
+                                    )}
+                                />
+                                {segmentCount > 0 && (
+                                    <p className="text-sm text-muted-foreground mt-2">
+                                        This will generate approximately {segmentCount} video segments.
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <Label className="font-medium text-gray-700">Estimated Length</Label>
                             <div className="flex items-center justify-center h-10 w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm text-muted-foreground">

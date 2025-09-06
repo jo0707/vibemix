@@ -12,9 +12,10 @@ interface Props {
     progress: number
     videoUrl: string | null
     outputDirectory?: string
+    wasCut?: boolean
 }
 
-export function StatusResultComponent({ status, progress, videoUrl, outputDirectory }: Props) {
+export function StatusResultComponent({ status, progress, videoUrl, outputDirectory, wasCut }: Props) {
     const { openDirectory } = useElectron()
     const { toast } = useToast()
     const handleOpenDirectory = async () => {
@@ -76,7 +77,22 @@ export function StatusResultComponent({ status, progress, videoUrl, outputDirect
                         )}
                         {status === "complete" && videoUrl && (
                             <div className="mt-3 space-y-3">
-                                <p className="text-sm text-gray-600">Video has been successfully generated!</p>
+                                <p className="text-sm text-gray-600">
+                                    Video has been successfully generated!
+                                    {outputDirectory && (
+                                        <>
+                                            <br />
+                                            <span>
+                                                Saved to:{" "}
+                                                <span className="font-semibold">
+                                                    {wasCut
+                                                        ? `${videoUrl.split("\\").slice(0, -1).join("\\")}_segments`
+                                                        : outputDirectory}
+                                                </span>
+                                            </span>
+                                        </>
+                                    )}
+                                </p>
                                 <div className="flex gap-2">
                                     {outputDirectory && (
                                         <Button
@@ -86,7 +102,7 @@ export function StatusResultComponent({ status, progress, videoUrl, outputDirect
                                             className="flex items-center gap-2"
                                         >
                                             <FolderOpen className="w-4 h-4" />
-                                            Open Output Folder
+                                            Open {wasCut ? "Segments" : "Output"} Folder
                                         </Button>
                                     )}
                                 </div>

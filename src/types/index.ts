@@ -8,6 +8,8 @@ export interface VideoConfig {
     loopCount: number
     imageDuration: number
     processingDevice: "cpu" | "gpu" | "amd-gpu"
+    cutEnabled?: boolean
+    cutInterval?: number
 }
 export interface ProcessingStatus {
     stage: "idle" | "preparing" | "processing-video" | "processing-audio" | "finalizing" | "complete" | "error"

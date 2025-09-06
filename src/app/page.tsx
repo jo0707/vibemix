@@ -7,19 +7,23 @@ import { DesktopCapabilities } from "@/components/desktop-capabilities"
 import { SongsList } from "@/components/songs-list"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useElectron } from "@/hooks/use-electron"
-import type { FileItem, ProcessingStatus, Status } from "@/types"
+import type { FileItem, ProcessingStatus, Status, VideoConfig } from "@/types"
 
 export default function Home() {
     const [images, setImages] = useState<FileItem[]>([])
     const [audio, setAudio] = useState<FileItem[]>([])
     const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null)
+    const [videoConfig, setVideoConfig] = useState<VideoConfig | null>(null)
     const { isElectron } = useElectron()
     const handleFileChange = (newImages: FileItem[], newAudio: FileItem[]) => {
         setImages(newImages)
         setAudio(newAudio)
     }
-    const handleProcessingUpdate = (progress: ProcessingStatus) => {
+    const handleProcessingUpdate = (progress: ProcessingStatus, config?: VideoConfig) => {
         setProcessingStatus(progress)
+        if (config) {
+            setVideoConfig(config)
+        }
     }
     const getStatus = (): Status => {
         if (!processingStatus || processingStatus.progress === 0) return "idle"
@@ -58,7 +62,9 @@ export default function Home() {
                                     <ProjectConfigComponent
                                         audioFiles={audio}
                                         images={images}
-                                        onProcessingUpdate={handleProcessingUpdate}
+                                        onProcessingUpdate={(progress, config) =>
+                                            handleProcessingUpdate(progress, config as VideoConfig)
+                                        }
                                     />
                                     <SongsList audioFiles={audio} />
                                     <StatusResultComponent
@@ -66,6 +72,7 @@ export default function Home() {
                                         progress={processingStatus?.progress || 0}
                                         videoUrl={processingStatus?.outputPath || null}
                                         outputDirectory={processingStatus?.outputDir}
+                                        wasCut={videoConfig?.cutEnabled}
                                     />
                                 </div>
                             </div>
@@ -91,6 +98,7 @@ export default function Home() {
                                 progress={processingStatus?.progress || 0}
                                 videoUrl={processingStatus?.outputPath || null}
                                 outputDirectory={processingStatus?.outputDir}
+                                wasCut={videoConfig?.cutEnabled}
                             />
                         </div>
                     </div>
